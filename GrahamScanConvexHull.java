@@ -22,10 +22,8 @@ public class GrahamScanConvexHull {
         if (points.length < 2) {
             return Arrays.asList(points);
         }
-        
 
-        //find the lowest point in the plane. If there are multiple lowest points
-        //then pick the leftmost one.
+        // Find the lowest point (and leftmost if tied)
         Point start = points[0];
         for (int i = 1; i < points.length; i++) {
             if (start.y > points[i].y) {
@@ -35,31 +33,50 @@ public class GrahamScanConvexHull {
             }
         }
 
-        sortToHandleCollinear(points, start);
+        // Sort points by polar angle with respect to the start point
+        sortByPolarAngle(points, start);
 
+        // Graham scan algorithm
         Stack<Point> stack = new Stack<>();
-        stack.push(points[0]);
-        stack.push(points[1]);
+        stack.push(points[0]); // Push the start point
+        
+        // Add second point
+        if (points.length > 1) {
+            stack.push(points[1]);
+        }
+        
+        // Process remaining points
         for (int i = 2; i < points.length; i++) {
             Point top = stack.pop();
-            //second point will always be in answer so this will never cause empty stack exception.
-            //as long as points[i] is on right of vector stack.peek() -> top keep getting rid of top of stack.
-            // while (crossProduct(stack.peek(), top, points[i]) < 0) {
-            //     top = stack.pop();
-            // }
-            while (!stack.isEmpty() && 
-                  (crossProduct(stack.peek(), top, points[i]) < 0 || 
-                  (crossProduct(stack.peek(), top, points[i]) == 0 && 
-                   distance(stack.peek(), points[i], top) > 0))) {
+            
+            // While the current point makes a non-left turn
+            while (!stack.isEmpty() && crossProduct(stack.peek(), top, points[i]) <= 0) {
+                // If collinear, keep the furthest point
+                if (crossProduct(stack.peek(), top, points[i]) == 0) {
+                    if (distance(stack.peek(), points[i]) > distance(stack.peek(), top)) {
+                        top = points[i];
+                    }
+                    break;
+                }
                 top = stack.pop();
             }
+            
             stack.push(top);
-            stack.push(points[i]);
+            
+            // Don't add the current point if it's collinear with the last two points
+            if (stack.size() < 2 || crossProduct(stack.get(stack.size() - 2), stack.peek(), points[i]) != 0) {
+                stack.push(points[i]);
+            } else if (distance(stack.get(stack.size() - 2), points[i]) > distance(stack.get(stack.size() - 2), stack.peek())) {
+                // If collinear, replace with the furthest point
+                stack.pop();
+                stack.push(points[i]);
+            }
         }
+        
         return new ArrayList<>(stack);
     }
 
-    private void sortToHandleCollinear(Point[] points, Point start) {
+    private void sortByPolarAngle(Point[] points, Point start) {
         Arrays.sort(points, (p1, p2) -> {
             if (p1 == start) {
                 return -1;
@@ -67,39 +84,32 @@ public class GrahamScanConvexHull {
             if (p2 == start) {
                 return 1;
             }
+            
             int cp = crossProduct(start, p1, p2);
             if (cp == 0) {
-                return distance(start, p1, p2);
+                // For collinear points, sort by distance from start
+                return Integer.compare(squaredDistance(start, p1), squaredDistance(start, p2));
             } else {
+                // Sort by polar angle (counter-clockwise)
                 return -cp;
             }
         });
-
-        //make sure last collinear points are in reverse order of distance.
-        Point p = points[0], q = points[points.length - 1];
-        int i = points.length - 2;
-        while (i >= 0 && crossProduct(p, q, points[i]) == 0) {
-            i--;
-        }
-
-        // reverse sort order of collinear points in the end positions
-        for (int l = i + 1, h = points.length - 1; l < h; l++, h--) {
-            Point tmp = points[l];
-            points[l] = points[h];
-            points[h] = tmp;
-        }
     }
 
     /**
-     * Returns < 0 if 'b' is closer to 'a' compared to 'c', == 0 if 'b' and 'c' are same distance from 'a'
-     * or > 0 if 'c' is closer to 'a' compared to 'b'.
+     * Squared distance between two points
      */
-    private int distance(Point a, Point b, Point c) {
-        int y1 = a.y - b.y;
-        int y2 = a.y - c.y;
-        int x1 = a.x - b.x;
-        int x2 = a.x - c.x;
-        return Integer.compare(y1 * y1 + x1 * x1, y2 * y2 + x2 * x2);
+    private int squaredDistance(Point a, Point b) {
+        int dx = a.x - b.x;
+        int dy = a.y - b.y;
+        return dx * dx + dy * dy;
+    }
+    
+    /**
+     * Distance from point a to point b
+     */
+    private int distance(Point a, Point b) {
+        return squaredDistance(a, b);
     }
 
     /**
@@ -124,6 +134,7 @@ public class GrahamScanConvexHull {
         }
         return points;
     }
+
 
     public static void main(String[] args) {
         // original code:
