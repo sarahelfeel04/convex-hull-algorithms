@@ -2,22 +2,31 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
-// should handle collinearity
+
+/**
+ * Graham Scan algorithm for finding the convex hull of a set of points.
+ * This implementation correctly handles collinear points.
+ */
 public class GrahamScanConvexHull {
 
-    static class Point{
+    static class Point {
         int x;
         int y;
-        Point(int x, int y){
+        
+        Point(int x, int y) {
             this.x = x;
             this.y = y;
         }
+        
         @Override
         public String toString() {
             return "(" + x + "," + y + ")";
         }
     }
 
+    /**
+     * Finds the convex hull of a set of points.
+     */
     public List<Point> findConvexHull(Point[] points) {
         if (points.length < 2) {
             return Arrays.asList(points);
@@ -26,9 +35,7 @@ public class GrahamScanConvexHull {
         // Find the lowest point (and leftmost if tied)
         Point start = points[0];
         for (int i = 1; i < points.length; i++) {
-            if (start.y > points[i].y) {
-                start = points[i];
-            } else if (start.y == points[i].y && start.x > points[i].x) {
+            if (start.y > points[i].y || (start.y == points[i].y && start.x > points[i].x)) {
                 start = points[i];
             }
         }
@@ -38,36 +45,47 @@ public class GrahamScanConvexHull {
 
         // Graham scan algorithm
         Stack<Point> stack = new Stack<>();
-        stack.push(points[0]); // Push the start point
+        stack.push(points[0]);
         
-        // Add second point
         if (points.length > 1) {
             stack.push(points[1]);
         }
         
-        // Process remaining points
+        // Process each point in the sorted array (starting from the 3rd point)
         for (int i = 2; i < points.length; i++) {
+            // Pop the top point from the stack - this is our current 'top of hull' candidate
             Point top = stack.pop();
             
-            // While the current point makes a non-left turn
+            // While we can make a right turn or have collinear points (cross product <= 0)
+            // and the stack isn't empty, we need to potentially remove points
             while (!stack.isEmpty() && crossProduct(stack.peek(), top, points[i]) <= 0) {
-                // If collinear, keep the furthest point
+                // Special case: if the points are collinear (cross product == 0)
                 if (crossProduct(stack.peek(), top, points[i]) == 0) {
+                    // For collinear points, we want to keep only the furthest one
                     if (distance(stack.peek(), points[i]) > distance(stack.peek(), top)) {
+                        // If the new point is further, it becomes our new candidate
                         top = points[i];
                     }
+                    // We break because we've handled this collinear case
                     break;
                 }
+                // For non-collinear right turns (cross product < 0), simply remove the bad point
                 top = stack.pop();
             }
             
+            // Push our current best 'top' candidate back onto the stack
             stack.push(top);
             
-            // Don't add the current point if it's collinear with the last two points
-            if (stack.size() < 2 || crossProduct(stack.get(stack.size() - 2), stack.peek(), points[i]) != 0) {
+            // Now decide whether to add the current point to the hull
+            if (stack.size() < 2 || 
+                // Add if it makes a non-collinear turn with last two points
+                crossProduct(stack.get(stack.size() - 2), stack.peek(), points[i]) != 0) {
                 stack.push(points[i]);
-            } else if (distance(stack.get(stack.size() - 2), points[i]) > distance(stack.get(stack.size() - 2), stack.peek())) {
-                // If collinear, replace with the furthest point
+            } 
+            // Special collinear case - only add if it's further than current last point
+            else if (distance(stack.get(stack.size() - 2), points[i]) > 
+                    distance(stack.get(stack.size() - 2), stack.peek())) {
+                // Replace last point with current point if it's further
                 stack.pop();
                 stack.push(points[i]);
             }
@@ -76,6 +94,9 @@ public class GrahamScanConvexHull {
         return new ArrayList<>(stack);
     }
 
+    /**
+     * Sort points by polar angle, and by distance for collinear points
+     */
     private void sortByPolarAngle(Point[] points, Point start) {
         Arrays.sort(points, (p1, p2) -> {
             if (p1 == start) {
@@ -88,7 +109,7 @@ public class GrahamScanConvexHull {
             int cp = crossProduct(start, p1, p2);
             if (cp == 0) {
                 // For collinear points, sort by distance from start
-                return Integer.compare(squaredDistance(start, p1), squaredDistance(start, p2));
+                return Integer.compare(distance(start, p1), distance(start, p2));
             } else {
                 // Sort by polar angle (counter-clockwise)
                 return -cp;
@@ -97,26 +118,19 @@ public class GrahamScanConvexHull {
     }
 
     /**
-     * Squared distance between two points
+     * Calculate the squared distance between two points
      */
-    private int squaredDistance(Point a, Point b) {
+    private int distance(Point a, Point b) {
         int dx = a.x - b.x;
         int dy = a.y - b.y;
         return dx * dx + dy * dy;
     }
-    
-    /**
-     * Distance from point a to point b
-     */
-    private int distance(Point a, Point b) {
-        return squaredDistance(a, b);
-    }
 
     /**
-     * Cross product to find where c belongs in reference to vector ab.
-     * If result > 0 it means 'c' is on left of ab
-     *    result == 0 it means 'a','b' and 'c' are collinear
-     *    result < 0  it means 'c' is on right of ab
+     * Cross product to determine orientation of three points.
+     * If result > 0: counter-clockwise turn
+     * If result = 0: collinear
+     * If result < 0: clockwise turn
      */
     private int crossProduct(Point a, Point b, Point c) {
         int y1 = a.y - b.y;
@@ -126,15 +140,17 @@ public class GrahamScanConvexHull {
         return y2 * x1 - y1 * x2;
     }
 
-    // Helper method to create Point arrays
-    private static Point[] createPoints(int[][] coords) {
+    /**
+     * Utility method to create points from coordinate pairs
+     */
+    public static Point[] createPoints(int[][] coords) {
         Point[] points = new Point[coords.length];
         for (int i = 0; i < coords.length; i++) {
             points[i] = new Point(coords[i][0], coords[i][1]);
         }
         return points;
     }
-
+    
 
     public static void main(String[] args) {
         // original code:
