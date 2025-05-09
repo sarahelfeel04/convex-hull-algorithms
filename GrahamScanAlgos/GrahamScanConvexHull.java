@@ -4,27 +4,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Stack;
+import Utilities.Point;
 
 /**
  * Graham Scan algorithm for finding the convex hull of a set of points.
  * This implementation correctly handles collinear points.
  */
 public class GrahamScanConvexHull {
-
-    static class Point {
-        int x;
-        int y;
-        
-        Point(int x, int y) {
-            this.x = x;
-            this.y = y;
-        }
-        
-        @Override
-        public String toString() {
-            return "(" + x + "," + y + ")";
-        }
-    }
 
     /**
      * Finds the convex hull of a set of points.

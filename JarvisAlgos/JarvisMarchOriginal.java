@@ -4,20 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import Utilities.Point;
 public class JarvisMarchOriginal {
-
-    static class Point{
-        int x;
-        int y;
-        Point(int x, int y){
-            this.x = x;
-            this.y = y;
-        }
-        @Override
-        public String toString() {
-            return "(" + x + "," + y + ")";
-        }
-    }
 
     public List<Point> findConvexHull(Point[] points) {
         //first find leftmost point to start the march.
