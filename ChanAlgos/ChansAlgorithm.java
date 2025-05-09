@@ -168,23 +168,24 @@ public class ChansAlgorithm {
     }
     
     /**
-     * Splits the input points into roughly equal-sized subsets
+     * Splits the input points into roughly equal-sized random subsets
+     * Randomly shuffles the points before splitting to increase the chance that hull points are on subset boundaries.
      * 
      * @param points the input set of points
      * @param m the parameter value
      * @return the subsets of points
      */
     private static List<List<Point>> splitIntoSubsets(List<Point> points, int m) {
+        List<Point> shuffledPoints = new ArrayList<>(points);
+        Collections.shuffle(shuffledPoints, new Random()); // Use default seed for true randomness
         List<List<Point>> subsets = new ArrayList<>();
-        int n = points.size();
+        int n = shuffledPoints.size();
         int K = (int) Math.ceil((double) n / m);
-        
         for (int i = 0; i < K; i++) {
             int start = i * m;
             int end = Math.min(start + m, n);
-            subsets.add(new ArrayList<>(points.subList(start, end)));
+            subsets.add(new ArrayList<>(shuffledPoints.subList(start, end)));
         }
-        
         return subsets;
     }
     
@@ -328,7 +329,7 @@ public class ChansAlgorithm {
      * @return 0 if collinear, 1 if counterclockwise, -1 if clockwise
      */
     private static int orientation(Point p, Point q, Point r) {
-        double val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+        double val = (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
         if (Math.abs(val) < 1e-9) return 0;  // collinear
         return (val > 0) ? 1 : -1;  // 1: counterclockwise, -1: clockwise
     }
