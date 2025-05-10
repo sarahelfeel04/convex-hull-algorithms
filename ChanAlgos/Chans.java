@@ -140,6 +140,8 @@ public class Chans {
 
         upper.remove(0);  // avoid duplication
         lower.addAll(upper);
+        if(lower.getLast()==lower.getFirst()&&lower.size()>1)
+            lower.removeLast(); // remove duplicate last point
         return lower;
     }
 
@@ -148,7 +150,7 @@ public class Chans {
         if (n <= 3) return grahamScan(v);
 
         for (int t = 1; ; t++) {
-            int m = Math.min(n, 1 << (1 << t));
+            int m = (int)Math.min(n+0l, 1l << (1 << t));
             List<List<Point>> hulls = new ArrayList<>();
 
             for (int i = 0; i < n; i += m) {
@@ -187,6 +189,16 @@ public class Chans {
         List<Point> result = chansAlgorithm(points);
         for (Point p : result)
             System.out.println(p);
+
+        // Test Case 9: Pentagon
+        System.out.println("\nTest Case 9 - Pentagon:");
+        List<Point> points9 = Arrays.asList(
+            new Point(0, 0), new Point(2, 0), new Point(3, 2), new Point(1, 4), new Point(-1, 2)
+        );
+        List<Point> result9 = chansAlgorithm(points9);
+        for (Point p : result9) {
+            System.out.println(p);
+        }
     }
 }
 
